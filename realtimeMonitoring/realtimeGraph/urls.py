@@ -6,4 +6,5 @@ from .views import *
 urlpatterns = [
     path('', DashboardView.as_view(), name='dashboard'),
     path('historical/', HistoricalView.as_view(), name='historical'),
+    path('api/city-activity/', city_activity, name='city-activity'),
 ]
