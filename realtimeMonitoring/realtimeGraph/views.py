@@ -673,3 +673,92 @@ Filtro para formatear datos en los templates
 @ register.filter
 def add_str(str1, str2):
     return str1 + str2
+
+
+@csrf_exempt
+def city_activity(request):
+    """
+    Endpoint JSON: /api/city-activity/?measurement=temperature&start=2021-06-01&end=2021-07-31
+    
+    Retorna actividad por ciudad (agregación de estaciones) con filtros de medición y rango de tiempo.
+    Response: [
+        {
+            "name": "ciudad, estado, país",
+            "lat": float,
+            "lng": float,
+            "stations": int,
+            "samples": int,
+            "min": float,
+            "max": float,
+            "avg": float
+        },
+        ...
+    ]
+    """
+    try:
+        measurement = request.GET.get('measurement', 'temperature')
+        start_str = request.GET.get('start')
+        end_str = request.GET.get('end')
+        
+        if not start_str or not end_str:
+            return JsonResponse(
+                {'error': 'start and end are required (YYYY-MM-DD).'}, 
+                status=400
+            )
+        
+        # Parse fechas YYYY-MM-DD
+        try:
+            start_date = datetime.strptime(start_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_str, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse(
+                {'error': 'Invalid date format. Use YYYY-MM-DD.'}, 
+                status=400
+            )
+        
+        data = []
+        
+        # Iterar por cada Location (ciudad, estado, país)
+        for location in Location.objects.all():
+            # Obtener estaciones en esa ubicación
+            stations = Station.objects.filter(location=location)
+            if not stations.exists():
+                continue
+            
+            # Filtrar datos por medición, estaciones y rango de tiempo
+            location_data = Data.objects.filter(
+                station__in=stations,
+                measurement__name=measurement,
+                time__date__gte=start_date,
+                time__date__lte=end_date,
+            )
+            
+            if not location_data.exists():
+                continue
+            
+            # Calcular agregados
+            aggregates = location_data.aggregate(
+                samples=Count('time'),
+                min_value=Min('value'),
+                max_value=Max('value'),
+                avg_value=Avg('value'),
+            )
+            
+            data.append({
+                'name': f'{location.city.name}, {location.state.name}, {location.country.name}',
+                'lat': float(location.lat) if location.lat else 0,
+                'lng': float(location.lng) if location.lng else 0,
+                'stations': stations.count(),
+                'samples': aggregates['samples'] or 0,
+                'min': aggregates['min_value'] if aggregates['min_value'] is not None else 0,
+                'max': aggregates['max_value'] if aggregates['max_value'] is not None else 0,
+                'avg': round(aggregates['avg_value'], 2) if aggregates['avg_value'] is not None else 0,
+            })
+        
+        return JsonResponse(data, safe=False)
+    
+    except Exception as e:
+        return JsonResponse(
+            {'error': str(e)}, 
+            status=500
+        )
