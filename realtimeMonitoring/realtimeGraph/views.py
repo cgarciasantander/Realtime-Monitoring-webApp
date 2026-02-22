@@ -795,7 +795,7 @@ def city_activity(request):
     ]
     """
     try:
-        measurement = request.GET.get('measurement', 'temperature')
+        measurement = request.GET.get('measurement', 'temperatura')
         start_str = request.GET.get('start')
         end_str = request.GET.get('end')
         
@@ -820,7 +820,14 @@ def city_activity(request):
             )
         
         data = []
-        
+
+        selectedMeasure = None
+        measurements = Measurement.objects.all()
+
+        selectedMeasure = Measurement.objects.filter(name=measurement).first()
+        if selectedMeasure is None and measurements.count() > 0:
+            selectedMeasure = measurements[0]
+
         # Iterar por cada Location (ciudad, estado, país)
         for location in Location.objects.all():
             # Obtener estaciones en esa ubicación
@@ -832,7 +839,7 @@ def city_activity(request):
             # En Timescale, usamos los campos precalculados: min_value, max_value, avg_value, length
             location_data = Data.objects.filter(
                 station__in=stations,
-                measurement__name=measurement,
+                measurement__name=selectedMeasure.name,
                 time__gte=start_ts,
                 time__lte=end_ts,
             )

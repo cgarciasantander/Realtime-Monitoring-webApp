@@ -21,10 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-mygg^ha8a4k3y1qz5!=(!iw%vnw3=b5amqz4-m=n-m4n_q_g^3"
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-mygg^ha8a4k3y1qz5!=(!iw%vnw3=b5amqz4-m=n-m4n_q_g^3")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = ["*"]
 
@@ -47,6 +47,7 @@ CRONJOBS = [("*/30 * * * *", "realtimeMonitoring.utils.updateCSVFile")]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -82,11 +83,11 @@ WSGI_APPLICATION = "realtimeMonitoring.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": "iot_data",
-        "USER": "dbadmin",
-        "PASSWORD": "uniandesIOT1234*",
-        "HOST": "localhost",
-        "PORT": "",
+        "NAME": os.environ.get("DB_NAME", "iot_data"),
+        "USER": os.environ.get("DB_USER", "dbadmin"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "uniandesIOT1234*"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
 
@@ -128,7 +129,7 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-# STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
+STATIC_ROOT = os.path.join(PROJECT_ROOT, "staticfiles")
 STATIC_URL = "/static/"
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, "static", "media")
 # MEDIA_URL = '/static/media/'
