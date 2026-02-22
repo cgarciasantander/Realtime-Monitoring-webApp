@@ -824,7 +824,8 @@ def city_activity(request):
         selectedMeasure = None
         measurements = Measurement.objects.all()
 
-        selectedMeasure = Measurement.objects.filter(name=measurement).first()
+        selectedMeasure = Measurement.objects.filter(name__iexact=measurement).first()
+
         if selectedMeasure is None and measurements.count() > 0:
             selectedMeasure = measurements[0]
 
